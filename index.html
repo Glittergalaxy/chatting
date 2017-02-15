@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>聊天室</title>
+</head>
+<body>
+	<div class="wrapper">
+		<div class="content" id="chat">
+			<ul id="chat_container">
+				
+			</ul>
+		</div>
+		<div class="action">
+			<textarea></textarea>
+			<button class="btn btn-success" id="clear">清空</button>
+			<button class="butn btn-success" id="send">发送</button>
+		</div>
+	</div>
+
+	<script type="text/javascript" src="./socket.io.js"></script>
+	<script type="text/javascript">
+		var ws = io.connect('http://127.0.0.1:8888');
+
+		//发送消息事件
+		var sendMsg = function(msg){
+			ws.emit('send.message',msg);
+		}
+
+		//将消息内容显示在页面中
+		var addMessage = function(from,msg){
+			var li = document.createElement('li');
+			li.innerHTML = '<span>' + from + '</span>' + ':' + msg;
+			document.querySelector('#chat_container').appendChild(li);
+
+			document.querySelector('#chat').scrollTop = document.querySelector('#chat').scrollHeight;
+			document.querySelector('textarea').focus();
+		}
+
+		//发送消息全过程：包括处理消息验证消息并发送和显示在页面中
+		var send = function(){
+			var ele_msg = document.querySelector('textarea');
+			var msg = ele_msg.value.replace('\r\n','').trim();
+			console.log(msg);
+			if(!msg)
+				return
+			sendMsg(msg);
+			addMessage('urself',msg);
+			ele_msg.value = '';
+		}
+
+		//连接时的昵称校验
+		ws.on('connect',function(){
+			var nickname = window.prompt('enter ur nickname');
+			while(!nickname){
+				nickname = window.prompt('nickname cant be null,please enter again');
+			}
+			ws.emit('join',nickname);
+		})
+
+		//昵称事件
+		ws.on('nickname',function(){
+			var nickname = window.prompt('nickname is repeated');
+			while(!nickname){
+				nickname = window.prompt('nickname cant be null,please enter again');
+			}
+			ws.emit('join',nickname);
+		})
+
+		//接收消息事件
+		ws.on('send.message',function(from,msg){
+			addMessage(from,msg);
+		})
+
+		//接收广播消息事件
+		ws.on('annoucement',function(from,msg){
+			addMessage(from,msg);
+		})
+
+		//监听按键，并调用发送消息方法
+		document.querySelector('textarea').addEventListener('keypress',function(){
+			if(event.which == 13){
+				send();
+			}
+		})
+
+		document.querySelector('textarea').addEventListener('keydown',function(){
+			if(event.which == 13){
+				send();
+			}
+		})
+
+		document.querySelector('#send').addEventListener('click', function(){
+              send();
+          });
+
+        document.querySelector('#clear').addEventListener('click', function(){
+              document.querySelector('#chat_container').innerHTML = '';
+        });
+
+	</script>
+	
+</body>
+</html>
